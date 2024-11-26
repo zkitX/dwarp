@@ -4,8 +4,8 @@
 #include "dwarpTypes.h"
 #include "dwarfEnum.h"
 
-#include "attributes/dwarfAttribute.h"
-#include "utils/LEB128.h"
+#include "attributes/AT_base.h"
+#include "utils/ByteBuffer.h"
 
 class dwarfAbbr
 {
@@ -13,7 +13,7 @@ public:
   dwarfAbbr();
   ~dwarfAbbr();
 
-  void deserialize( dwarfSectionData &data, uint64 abbrevSize, uint64 offset );
+  void deserialize( ByteBuffer &buffer, uint64 abbrevSize, uint64 offset );
 
 protected:
   struct AbbrevEntry
@@ -28,10 +28,13 @@ protected:
     uint64 abbrevCode;
     DW_TAG tag;
     DW_CHILDREN hasChildren;
-    std::vector<attributeSpec> attributesSpecs;
+    std::vector<AT_Base*> attributesSpecs;
   };
 
+public:
   std::vector<AbbrevEntry> m_abbrevEntries;
 };
+
+AT_Base* createAttribute( DW_AT attribute, DW_FORM form );
 
 #endif // DWARFABBR_H

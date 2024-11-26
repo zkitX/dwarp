@@ -2,8 +2,9 @@
 #define DWARFCU_H
 
 #include "dwarpTypes.h"
+#include "utils/byteBuffer.h"
 
-enum class CU_AddressSize : ubyte
+enum CU_AddressSize : ubyte
 {
   CU_32 = 4,
   CU_64 = 8
@@ -14,21 +15,22 @@ class dwarfCU
 public:
   dwarfCU();
   ~dwarfCU();
-  void deserialize( dwarfSectionData& data, uint64& offset);
+  void deserialize( ByteBuffer& buffer, uint64& headerOffset, uint64& nextOffset );
+  void parseData( ByteBuffer& buffer );
 
-  inline bool is64Bit() const
+  inline bool isDWARF64() const
   {
     return m_is64Bit;
   };
 
   inline uint64 getAbbrevOffset() const
   {
-    return m_is64Bit ? m_header.m_64BitAbbrevOffset : m_header.m_32BitAbbrevOffset;
+    return m_header.abbrev_offset;
   }
   
   inline uint64 getAbbrevSize() const
   {
-    return m_is64Bit ? m_header.m_64BitSize : m_header.m_32BitSize;
+    return m_header.unit_length;
   }
 
   inline class dwarfAbbr* getAbbr()
@@ -36,35 +38,35 @@ public:
     return m_abbr;
   }
 
+  inline CU_AddressSize getAddressSize() const
+  {
+    return m_header.address_size;
+  }
+
 protected:
   struct CUHeader
   {
     CUHeader()
-      : m_64BitSize( 0 ),
-        m_version( 0 ),
-        m_64BitAbbrevOffset( 0 ),
-        m_addrSize( CU_AddressSize::CU_32 )
+      : unit_length( 0 ),
+        version( 0 ),
+        abbrev_offset( 0 ),
+        address_size( CU_AddressSize::CU_32 )
     {
     }
-    union
-    {
-      uint32 m_32BitSize;
-      uint64 m_64BitSize;
-    };
-
-    uint16 m_version;
-
-    union
-    {
-      uint32 m_32BitAbbrevOffset;
-      uint64 m_64BitAbbrevOffset;
-    };
-
-    CU_AddressSize m_addrSize;
+    uint64 unit_length;
+    uint16 version;
+    uint64 abbrev_offset;
+    CU_AddressSize address_size;
   } m_header;
 
+  uint64 m_dieOffset;
   class dwarfAbbr* m_abbr;
   bool m_is64Bit;
 };
+
+extern dwarfCU* currentCU;
+extern std::vector<dwarfCU*> dwarfCompileUnits;
+
+size_t readCompileUnits();
 
 #endif // DWARFCU_H

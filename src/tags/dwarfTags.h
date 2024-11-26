@@ -2,7 +2,7 @@
 #define DWARFTAGS_H
 
 #include "dwarfEnum.h"
-#include "attributes/dwarfAttribute.h"
+#include "attributes/AT_base.h"
 
 #define DECL                    \
     DW_AT_DECL_COLUMN:          \

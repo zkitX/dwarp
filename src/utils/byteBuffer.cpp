@@ -1,15 +1,33 @@
-#include "LEB128.h"
+#include "byteBuffer.h"
 
-uint64 LEB128::decode_uleb128( const byte *data, size_t &bytes_read )
+std::string ByteBuffer::readString()
+{
+    assert(m_pos < m_buffer.size(), "Buffer overflow");
+
+    std::string result;
+    while (m_pos < m_buffer.size() && m_buffer[m_pos] != '\0')
+    {
+      result += m_buffer[m_pos++];
+    }
+
+    if (m_pos < m_buffer.size())
+    {
+      m_pos++; // Skip the null terminator
+    }
+
+    return result;
+}
+
+template<>
+uint64 ByteBuffer::readLEB128()
 {
   uint64_t result = 0;
   size_t shift = 0;
   size_t index = 0;
-  const uint8_t *readPos = reinterpret_cast<const uint8_t *>( &data[bytes_read] );
 
   while ( 1 )
   {
-    uint8_t byte = readPos[index++];
+    uint8_t byte = m_buffer[m_pos + index++];
     result |= (uint64_t)( byte & 0x7F ) << shift;
     if ( ( byte & 0x80 ) == 0 )
     { // End of LEB128 encoding
@@ -18,22 +36,22 @@ uint64 LEB128::decode_uleb128( const byte *data, size_t &bytes_read )
     shift += 7;
   }
 
-  bytes_read += index; // Increment our byte position
+  m_pos += index; // Increment our position
 
   return result;
 }
 
-int64 LEB128::decode_sleb128( const byte *data, size_t &bytes_read )
+template<>
+int64 ByteBuffer::readLEB128()
 {
   int64_t result = 0;
   size_t shift = 0;
   size_t index = 0;
-  const uint8_t *readPos = reinterpret_cast<const uint8_t *>( &data[bytes_read] );
   uint8_t byte;
 
   while ( 1 )
   {
-    byte = readPos[index++];
+    byte = m_buffer[m_pos + index++];
     result |= ( (int64_t)( byte & 0x7F ) << shift );
     shift += 7;
 
@@ -49,7 +67,7 @@ int64 LEB128::decode_sleb128( const byte *data, size_t &bytes_read )
     result |= -( 1LL << shift );
   }
 
-  bytes_read += index; // increment our bytes position
+  m_pos += index; // increment our position
 
   return result;
 }

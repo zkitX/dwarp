@@ -1,6 +1,8 @@
 #ifndef DWARFSECTIONS_H
 #define DWARFSECTIONS_H
 
+#include "dwarpTypes.h"
+
 constexpr const char *DEBUG_INFO = ".debug_info";
 constexpr const char *DEBUG_ABBREV = ".debug_abbrev";
 constexpr const char *DEBUG_LINE = ".debug_line";
@@ -25,5 +27,10 @@ constexpr const char *DWARF_SECTIONS_NAMES[MAX_DWARF_SECTIONS] = { DEBUG_INFO,
                                                                    DEBUG_MACINFO,
                                                                    DEBUG_PUBTYPES,
                                                                    DEBUG_FRAME };
+
+extern std::unordered_map<std::string, dwarfSectionPtr> dwarfSections;
+extern std::unordered_map<std::string, ByteBuffer> dwarfData;
+
+int findDwarfSections(elfio& reader);
 
 #endif // DWARFSECTIONS_H

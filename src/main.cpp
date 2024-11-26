@@ -2,44 +2,13 @@
 #include "dwarfSections.h"
 #include "dwarfCU.h"
 #include "dwarfAbbr.h"
+#include "dwarfTU.h"
+#include "dwarfLine.h"
+#include "utils/byteBuffer.h"
 
-using namespace ELFIO;
-
-static std::unordered_map<std::string, dwarfSectionData> dwarfSections;
-static std::vector<dwarfCU*> dwarfCompileUnits;
 static elfio reader;
 
-int findDwarfSections()
-{
-  int sectionsFound = 0;
-  for ( int i = 0; i < MAX_DWARF_SECTIONS; i++ )
-  {
-    dwarfSectionPtr data = reader.sections[DWARF_SECTIONS_NAMES[i]];
-    if ( data != nullptr )
-    {
-      dwarfSections[DWARF_SECTIONS_NAMES[i]] = { DWARF_SECTIONS_NAMES[i], data, 0 };
-      ++sectionsFound;
-    }
-  }
-
-  return sectionsFound;
-}
-
-void readCompileUnits()
-{
-  dwarfSectionData debugInfoData = dwarfSections.at( DEBUG_INFO );
-  dwarfSectionData abbrRevData = dwarfSections.at(DEBUG_ABBREV);
-  uint64 sectionSize = debugInfoData.sectionPtr->get_size();
-  uint64 offset = 0;
-  while ( offset < sectionSize )
-  {
-    dwarfCU* unitToAdd = new dwarfCU();
-    unitToAdd->deserialize( debugInfoData, offset );
-    unitToAdd->getAbbr()->deserialize(abbrRevData, unitToAdd->getAbbrevSize(), unitToAdd->getAbbrevOffset());
-
-    dwarfCompileUnits.push_back( unitToAdd );
-  }
-}
+bool isDWARF64;
 
 int main( int argc, char *argv[] )
 {
@@ -55,10 +24,18 @@ int main( int argc, char *argv[] )
     return 0;
   }
 
-  int foundSections = findDwarfSections();
-  std::cout << "Found a total of " << foundSections << " DWARF sections." << std::endl;
-  readCompileUnits();
+  for ( int i = 0; i < reader.sections.size(); i++ )
+  {
+    std::cout << "Section " << i << ": " << reader.sections[i]->get_name() << std::endl;
+  }
 
-  std::cout << "Deserialized a total of " << dwarfCompileUnits.size() << " compile units." << std::endl;
+  int foundSections = findDwarfSections(reader);
+  std::cout << "Found a total of " << foundSections << " DWARF sections." << std::endl;
+
+  size_t totalLineUnits = dwarfLineParse();
+  std::cout << "Deserialized a total of " << totalLineUnits << " line units." << std::endl;
+  size_t totalCompileUnits = readCompileUnits();
+  std::cout << "Deserialized a total of " << totalCompileUnits << " compile units." << std::endl;
+
   return 1;
 }
